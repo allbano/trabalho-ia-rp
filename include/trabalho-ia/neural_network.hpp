@@ -12,6 +12,10 @@ private:
     std::vector<std::vector<double>> weightsHiddenOutput;
     std::vector<double> biasOutput;
 
+    // Pesos para balanceamento de classes
+    double weightClass0;
+    double weightClass1;
+
     void initializeWeights();
 
 public:
@@ -20,7 +24,7 @@ public:
     // Calcula a saída da rede para uma entrada
     double predict(const std::vector<double>& input);
 
-    // Treina a rede usando Backpropagation
+    // Agora calcula pesos internos baseados no dataset
     void train(const std::vector<std::vector<double>>& inputs, const std::vector<double>& targets);
 };
 
