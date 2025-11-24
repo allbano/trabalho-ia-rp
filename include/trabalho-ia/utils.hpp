@@ -9,8 +9,8 @@ namespace Config {
 const int INPUT_SIZE = 100; // Dimensão dos vetores fornecidos
 const int HIDDEN_SIZE = 32; // Neurônios na camada oculta
 const int OUTPUT_SIZE = 1;  // Classificação binária
-const double LEARNING_RATE = 0.05;
-const int EPOCHS = 1000;
+const double LEARNING_RATE = 0.05; // Ajustado para lidar com normalização
+const int EPOCHS = 1000; // Utilizado mais EPOCHS para balanceamento
 } // namespace Config
 
 // --- Estruturas de Dados ---
