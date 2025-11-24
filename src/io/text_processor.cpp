@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <cctype> // Para toupper
 
 using namespace Config;
 
@@ -11,7 +12,7 @@ void TextProcessor::loadVocabulary(const std::string& wordFile, const std::strin
     std::ifstream vf(vecFile);
     
     if (!wf.is_open() || !vf.is_open()) {
-        std::cerr << "[IO Error] Erro ao abrir arquivos de vocabulario (" << wordFile << " ou " << vecFile << ")" << std::endl;
+        std::cerr << "[IO Error] Erro ao abrir arquivos de vocabulario." << std::endl;
         exit(1);
     }
 
@@ -19,8 +20,12 @@ void TextProcessor::loadVocabulary(const std::string& wordFile, const std::strin
     int count = 0;
     
     while (std::getline(wf, word)) {
-        // Remove carriage return (comum em arquivos Windows/DOS)
+        // Limpeza de carriage return (\r) do Windows/CRLF
         word.erase(std::remove(word.begin(), word.end(), '\r'), word.end());
+        word.erase(std::remove(word.begin(), word.end(), ' '), word.end());
+        
+        // O arquivo PALAVRASpc.txt já é maiúsculo, mas garantimos a consistência
+        // Nenhuma ação necessária se já for maiúsculo, mas removemos espaços extras
         
         std::vector<double> vec;
         if (std::getline(vf, line)) {
@@ -32,6 +37,8 @@ void TextProcessor::loadVocabulary(const std::string& wordFile, const std::strin
         }
         
         if (vec.size() == INPUT_SIZE) {
+            // Normalizamos as palavras base também? Geralmente ajuda.
+            // Math::normalizeVector(vec); (Opcional, mas recomendado testar)
             wordVectors[word] = vec;
             count++;
         }
@@ -56,14 +63,18 @@ Dataset TextProcessor::loadTrainingData(const std::string& featureFile, const st
         double val;
         while (ss >> val) vec.push_back(val);
 
+        // Parse da label (notação científica ou inteira)
         double label = std::stod(lineL);
 
         if (vec.size() == INPUT_SIZE) {
+            // IMPORTANTE: Normalizar o vetor de entrada do treinamento
+            Math::normalizeVector(vec);
+            
             data.inputs.push_back(vec);
             data.targets.push_back(label);
         }
     }
-    std::cout << "[TextProcessor] Dados de treino carregados: " << data.inputs.size() << " exemplos." << std::endl;
+    std::cout << "[TextProcessor] Dados de treino carregados e normalizados: " << data.inputs.size() << " exemplos." << std::endl;
     return data;
 }
 
@@ -75,9 +86,11 @@ std::vector<double> TextProcessor::textToVector(std::string text) {
     std::string token;
     
     while (ss >> token) {
-        // Limpeza básica
+        // Remove pontuação
         token.erase(std::remove_if(token.begin(), token.end(), ::ispunct), token.end());
-        std::transform(token.begin(), token.end(), token.begin(), ::tolower);
+        
+        // CORREÇÃO: Transforma para UPPERCASE para dar match com PALAVRASpc.txt
+        std::transform(token.begin(), token.end(), token.begin(), ::toupper);
 
         if (wordVectors.count(token)) {
             const auto& v = wordVectors[token];
@@ -89,9 +102,12 @@ std::vector<double> TextProcessor::textToVector(std::string text) {
     }
 
     if (foundWords > 0) {
+        // Média
         for (int i = 0; i < INPUT_SIZE; ++i) {
             avgVec[i] /= foundWords;
         }
+        // IMPORTANTE: Normaliza o vetor resultante do usuário também
+        Math::normalizeVector(avgVec);
     }
     
     return avgVec;
